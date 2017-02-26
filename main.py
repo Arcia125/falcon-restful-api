@@ -7,10 +7,46 @@ from wsgiref import simple_server
 
 config = json.load(open('./serverConfig.json'))
 
-class Things:
+dummy_data = {
+    'employees': [
+        {
+            'name': 'Tom',
+            'age': 24,
+            'title': 'front end developer'
+        },
+        {
+            'name': 'Jerry',
+            'age': 29,
+            'title': 'designer'
+        }
+    ],
+    'customers': [
+        {
+            'name': 'Angela',
+            'age': 25,
+            'balance': 400
+        },
+        {
+            'name': 'Steve',
+            'age': 49,
+            'balance': 240
+        }
+    ]
+}
+
+class Customers:
     def on_get(self, req, res):
+        path = req.path
         res.status = falcon.HTTP_200
-        res.body = json.dumps([{"id": 1, "name": "Thingie"}])
+        customers = dummy_data['customers']
+        res.body = json.dumps([customers])
+
+class Employees:
+    def on_get(self, req, res):
+        path = req.path
+        res.status = falcon.HTTP_200
+        employees = dummy_data['employees']
+        res.body = json.dumps([employees])
 
 def serve_file(filepath, res, req):
     if os.path.isfile(filepath):
@@ -47,7 +83,8 @@ def init_server():
     return app
 
 def add_routes(app):
-    app.add_route('/things', Things())
+    app.add_route('/customers', Customers())
+    app.add_route('/employees', Employees())
     app.add_sink(static, '/dist')
     app.add_route('/', Index())
     return app
