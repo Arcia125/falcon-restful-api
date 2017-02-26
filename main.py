@@ -12,30 +12,35 @@ class Things:
         res.status = falcon.HTTP_200
         res.body = json.dumps([{"id": 1, "name": "Thingie"}])
 
-def serve_file(filepath, res):
+def serve_file(filepath, res, req):
     if os.path.isfile(filepath):
-        res.content_type = mimetypes.guess_type(filepath)[0]
+        content_type = mimetypes.guess_type(filepath)[0]
+        file_type = content_type.split('/')[0]
+        res.content_type = content_type
         res.status = falcon.HTTP_200
-        with open(filepath, 'r') as f:
-            res.body = f.read()
+        if file_type == 'image':
+            res.stream = open(filepath, 'rb')
+            res.stream_len = os.path.getsize(filepath)
+        else:
+            with open(filepath, 'r') as text_file:
+                res.body = text_file.read()
     else:
         res.status = falcon.HTTP_404
 
 def static(req, res):
     path = req.path.lstrip('/')
-    serve_file(path, res)
+    serve_file(path, res, req)
 
 class Index:
-    def __init__(self, static_dir='static'):
-        self.static_dir = static_dir
-        self.index_file = 'index.html'
+    def __init__(self, index_file='index.html'):
+        self.index_file = index_file
 
     def on_get(self, req, res):
         if req.path == '/':
-            path = os.path.join(self.static_dir, self.index_file)
+            path = self.index_file
         else:
             path = req.path
-        serve_file(path, res)
+        serve_file(path, res, req)
 
 def init_server():
     app = falcon.API()
@@ -43,7 +48,7 @@ def init_server():
 
 def add_routes(app):
     app.add_route('/things', Things())
-    app.add_sink(static, '/static')
+    app.add_sink(static, '/dist')
     app.add_route('/', Index())
     return app
 
